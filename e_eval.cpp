@@ -88,6 +88,11 @@ bool e_is_operator(const char* value)
 
 std::vector<e_token> e_compile(std::string function, int& error)
 {
+	if (function.empty())
+	{
+		error = 5;
+		return {};
+	}
 	std::vector<e_token> tokens;
 	std::vector<e_token> output;
 	std::stack<e_token> op_stack;
@@ -174,7 +179,7 @@ std::vector<e_token> e_compile(std::string function, int& error)
 	// convert tokens to RPN
 	for (int i = 0; i < tokens.size(); i++)
 	{
-		// fix user errors
+		// fix user input
 		if (i + 1 < tokens.size())
 		{
 			if (tokens[i].type == e_number_type)
@@ -202,6 +207,22 @@ std::vector<e_token> e_compile(std::string function, int& error)
 					{
 						error = 1;
 						return {};
+					}
+				}
+			}
+			else if (tokens[i].type == e_operator_type && (tokens[i].value == "-" || tokens[i].value == "+"))
+			{
+				if ((i - 1 >= 0 && (tokens[i - 1].type == e_operator_type || tokens[i - 1].value == "(")) || i - 1 < 0)
+				{
+					if (tokens[i].value == "+")
+						tokens.erase(tokens.begin() + i);
+					else if (tokens[i].value == "-")
+					{
+						tokens.erase(tokens.begin() + i);
+						tokens.insert(tokens.begin() + i, { e_operator_type, "*" });
+						tokens.insert(tokens.begin() + i, { e_number_type, "-1" });
+						i--;
+						continue;
 					}
 				}
 			}
@@ -305,20 +326,28 @@ double e_evaluate(std::vector<e_token>& tokens, std::vector<e_operand>& operands
 			}
 			else if (token.type == e_operand_type)
 			{
-				for (auto& operand : operands)
-				{
-					if (token.value == operand.operand)
+				if(!operands.empty())
+					for (auto& operand : operands)
 					{
-						stack.push(operand.value);
-						goto skip;
+						if (token.value == operand.operand)
+						{
+							stack.push(operand.value);
+							goto skip;
+						}
 					}
-				}
 				// ERROR
 				error = 2;
 				return nan("");
+			skip:;
 			}
 			else if (token.type == e_function_type)
 			{
+				if(stack.empty())
+				{
+					// ERROR
+					error = 3;
+					return nan("");
+				}
 				a = stack.top();
 				stack.pop();
 				int id = e_get_list_id(token.value.c_str());
@@ -333,13 +362,32 @@ double e_evaluate(std::vector<e_token>& tokens, std::vector<e_operand>& operands
 			}
 			else if (token.type == e_operator_type)
 			{
+				if (stack.empty())
+				{
+					// ERROR
+					error = 4;
+					return nan("");
+				}
 				a = stack.top();
 				stack.pop();
+				if (stack.empty())
+				{
+					// ERROR
+					error = 4;
+					return nan("");
+				}
 				b = stack.top();
 				stack.pop();
+				if (token.value == "/" && a == 0)
+				{
+					// ERROR
+					error = 6;
+					return nan("");
+				}
+
 				int id = e_get_list_id(token.value.c_str());
 				if (id >= 0)
-					stack.push(e_list_operators[id].function(a, b));
+					stack.push(e_list_operators[id].function(b, a));
 				else
 				{
 					// ERROR
@@ -347,11 +395,11 @@ double e_evaluate(std::vector<e_token>& tokens, std::vector<e_operand>& operands
 					return nan("");
 				}
 			}
-		skip:;
 		}
 		if (!stack.empty())
 			return stack.top();
 	}
+	error = 5;
 	return nan("");
 }
 
@@ -365,5 +413,9 @@ std::string e_get_error_message(int error)
 		return "Function error!";
 	else if (error == 4)
 		return "Operator error!";
+	else if (error == 5)
+		return "Token error!";
+	else if (error == 6)
+		return "Division by 0!";
 	return "";
 }
