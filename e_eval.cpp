@@ -1,6 +1,5 @@
 #include "e_eval.h"
 
-#include <iostream>
 #include <stack>
 #include <functional>
 
@@ -26,24 +25,34 @@ static double e_sub(double a, double b) { return a - b; }
 static double e_mult(double a, double b) { return a * b; }
 static double e_div(double a, double b) { return a / b; }
 static double e_pow(double a, double b) { return pow(a, b); }
+static double e_root(double a, double b) { return pow(a, 1.0/b); }
 static double e_mod(int a, int b) { return a % b; }
+static double e_abs(double a, double b) { return abs(a); }
 static double e_sin(double a, double b) { return sin(a); }
 static double e_cos(double a, double b) { return cos(a); }
 static double e_tan(double a, double b) { return tan(a); }
+static double e_asin(double a, double b) { return asin(a); }
+static double e_acos(double a, double b) { return acos(a); }
+static double e_atan(double a, double b) { return atan(a); }
 
 static double e_pi() { return 3.14159265358979323846; }
 static double e_e() { return 2.71828182845904523536; }
 
 const e_operator e_list_operators[] = {
-	{"+",   e_add , 1, 0},
-	{"-",   e_sub , 1, 0},
-	{"*",   e_mult, 2, 0},
-	{"/",   e_div , 2, 0},
-	{"^",   e_pow , 3, 1},
-	{"%",   e_mod , 3, 0},
-	{"sin", e_sin , 0, 0},
-	{"cos", e_cos , 0, 0},
-	{"tan", e_tan , 0, 0}
+	{"+",    e_add , 1, 0},
+	{"-",    e_sub , 1, 0},
+	{"*",    e_mult, 2, 0},
+	{"/",    e_div , 2, 0},
+	{"^",    e_pow , 3, 0},
+	{"$",    e_root, 3, 1},
+	{"%",    e_mod , 2, 0},
+	{"abs",  e_abs , 0, 0},
+	{"sin",  e_sin , 0, 0},
+	{"cos",  e_cos , 0, 0},
+	{"tan",  e_tan , 0, 0},
+	{"asin", e_asin, 0, 0},
+	{"acos", e_acos, 0, 0},
+	{"atan", e_atan, 0, 0}
 };
 
 int e_get_list_id(const char* value)
@@ -112,6 +121,7 @@ std::vector<e_token> e_compile(std::string function, int& error)
 	// convert to tokens
 	for (int i = 0; i < function.size(); i++)
 	{
+		bool isfunc = false;
 		// check if number
 		if ((function[i] >= '0' && function[i] <= '9') || function[i] == '.')
 			num.push_back(function[i]);
@@ -132,8 +142,22 @@ std::vector<e_token> e_compile(std::string function, int& error)
 			{
 				tokens.push_back({ e_function_type, op });
 				i += 2;
+				isfunc = true;
 			}
 			else
+			{
+				if (i + 3 < function.size())
+				{
+					op.push_back(function[i + 3]);
+				}
+				if (i + 3 < function.size() && e_is_operator(op.c_str()))
+				{
+					tokens.push_back({ e_function_type, op });
+					i += 3;
+					isfunc = true;
+				}
+			}
+			if(!isfunc)
 			{
 				// check if operator
 				op = function[i];
@@ -387,7 +411,18 @@ double e_evaluate(std::vector<e_token>& tokens, std::vector<e_operand>& operands
 
 				int id = e_get_list_id(token.value.c_str());
 				if (id >= 0)
-					stack.push(e_list_operators[id].function(b, a));
+				{
+					if (id == 5)
+					{
+						if(a < 0 && b == (int)b && (int)b % 3 == 0)
+							stack.push(-e_list_operators[id].function(abs(a), b));
+						else
+							stack.push(e_list_operators[id].function(a, b));
+
+					}
+					else
+						stack.push(e_list_operators[id].function(b, a));
+				}
 				else
 				{
 					// ERROR
