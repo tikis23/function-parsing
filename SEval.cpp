@@ -27,6 +27,9 @@ namespace SEval
 	static double func_abs (double a, double b) { return abs(a); };
 	static double func_degToRad (double a, double b) { return a * 0.01745329251994329576; };
 	static double func_radToDeg (double a, double b) { return a * 57.2957795130823208768; };	
+	static double func_floor (double a, double b) { return floor(a); };	
+	static double func_ceil  (double a, double b) { return ceil(a); };	
+	
 	
 	// constants
 	static double func_pi(double a, double b) { return 3.14159265358979323846; }
@@ -56,7 +59,9 @@ namespace SEval
 		{"actg", func_actg},
 		{"abs" , func_abs},
 		{"dtr" , func_degToRad},
-		{"rtd" , func_radToDeg}
+		{"rtd" , func_radToDeg},
+		{"floor" , func_floor},
+		{"ceil" , func_ceil}
 	};
 	const _internal_function constantList[] =
 	{
