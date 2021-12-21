@@ -14,12 +14,14 @@ namespace SEval
 		NUMBER,
 		BRACKET
 	};
+
 	// changeable token value
 	struct operand
 	{
 		char symbol;
 		double value;
 	};
+
 	// value used in evaluation
 	struct token
 	{
@@ -42,12 +44,15 @@ namespace SEval
 	};
 
 	// parses string to tokens
-	std::vector<token> parseString(std::string function, bool correctInput = true, int* errorCode = nullptr);
+	std::vector<token> parseString(std::string function, int* errorCode = nullptr);
+
 	// returns operands from token vector
 	std::vector<operand> getOperands(const std::vector<token>& tokens);
+
 	// evaluates tokens
 	double evaluate(const std::vector<token>& tokens, int* errorCode = nullptr);
 	double evaluate(const std::vector<token>& tokens, const std::vector<operand>& operands, int* errorCode = nullptr);
+
 	// converts error code to string
 	std::string getErrorString(int errorCode);
 }

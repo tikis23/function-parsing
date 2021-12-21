@@ -5,7 +5,6 @@
 
 namespace SEval
 {
-
 	// operators
 	static double func_add (double a, double b) { return a + b; }
 	static double func_sub (double a, double b) { return a - b; }
@@ -14,7 +13,8 @@ namespace SEval
 	static double func_mod (int a, int b) { return fmod(a, b); }
 	static double func_pow (double a, double b) { return pow(a, b); }
 	static double func_root(double a, double b) { return pow(b, 1.0 / a); }
-				  
+	static double func_log (double a, double b) { return log2(b)/log2(a); }		  
+
 	// functions  
 	static double func_sin (double a, double b) { return sin(a); };
 	static double func_asin(double a, double b) { return asin(a); };
@@ -24,8 +24,10 @@ namespace SEval
 	static double func_atan(double a, double b) { return atan(a); };
 	static double func_ctg (double a, double b) { return tan(1.57079632679489661923 - a); };
 	static double func_actg(double a, double b) { return 1.57079632679489661923 - atan(a); };
-	static double func_abs(double a, double b) { return abs(a); };
-
+	static double func_abs (double a, double b) { return abs(a); };
+	static double func_degToRad (double a, double b) { return a * 0.01745329251994329576; };
+	static double func_radToDeg (double a, double b) { return a * 57.2957795130823208768; };	
+	
 	// constants
 	static double func_pi(double a, double b) { return 3.14159265358979323846; }
 	static double func_e (double a, double b) { return 2.71828182845904523536; }
@@ -35,8 +37,10 @@ namespace SEval
 	{
 		std::string name = "";
 		std::function<double(double, double)> function;
+
 		// operator priority
 		int precedence = 0;
+
 		// 0 - left; 1 - right
 		int associativity = 0;
 	};
@@ -50,7 +54,9 @@ namespace SEval
 		{"atan", func_atan},
 		{"ctg" , func_ctg },
 		{"actg", func_actg},
-		{"abs", func_abs}
+		{"abs" , func_abs},
+		{"dtr" , func_degToRad},
+		{"rtd" , func_radToDeg}
 	};
 	const _internal_function constantList[] =
 	{
@@ -65,7 +71,8 @@ namespace SEval
 		{"/", func_div , 2, 0},
 		{"%", func_mod , 2, 0},
 		{"$", func_root, 3, 1},
-		{"^", func_pow , 3, 1}
+		{"^", func_pow , 3, 1},
+		{"l", func_log , 3, 1}
 	};
 
 	// helper functions
@@ -91,17 +98,12 @@ namespace SEval
 		return -1;
 	}
 
-	std::vector<token> parseString(std::string function, bool correctInput, int* errorCode)
+	std::vector<token> parseString(std::string function, int* errorCode)
 	{
 		// if empty return
 		if (function.empty())
 			return std::vector<token>();
 
-		// input correcting
-		if (correctInput)
-		{
-
-		}
 		// correct format 		
 		for (int i = 0; i < function.size(); i++)
 		{
@@ -114,20 +116,6 @@ namespace SEval
 			}
 
 			// + && - correction
-			if (i == 0 || (i - 1 >= 0 && function[i-1] == '('))
-			{
-				if (function[i] == '+')
-				{
-					function.erase(function.begin()+i);
-					i--;
-					continue;
-				}
-				if (function[i] == '-')
-				{
-					function.insert(function.begin()+i, '0');
-					continue;
-				}
-			}
 			if (i + 1 < function.size())
 			{
 				if (function[i] == '+' && (function[i + 1] == '+' || function[i + 1] == '-'))
@@ -147,7 +135,6 @@ namespace SEval
 					continue;
 				}
 			}
-
 
 			// correct decimal point
 			if (function[i] == ',')
@@ -229,6 +216,79 @@ namespace SEval
 				tokens.push_back({ _internal_type::BRACKET, 1, 0 });
 		}
 
+		// correction in tokens
+		for (int i = 0; i < tokens.size(); i++)
+		{
+			// if current token is operand
+			if (tokens[i].type == SEval::_internal_type::OPERAND && i + 1 < tokens.size())
+			{
+				// if next token is operand or left bracket
+				if (tokens[i + 1].type == SEval::_internal_type::OPERAND || (tokens[i + 1].type == SEval::_internal_type::BRACKET && tokens[i + 1].indexValue == 0))
+				{
+					tokens.insert(tokens.begin() + i + 1, token{ SEval::_internal_type::OPERATOR, 2, 0 });
+					i--;
+					continue;
+				}
+			}
+
+			// if previous token is operator
+			if (i - 1 >= 0 && tokens[i - 1].type == SEval::_internal_type::OPERATOR)
+			{
+				// if operator
+				if (tokens[i].type == SEval::_internal_type::OPERATOR)
+				{
+					// if current token is -
+					if (tokens[i].indexValue == 1)
+					{
+						tokens[i] = token{ SEval::_internal_type::NUMBER, 0, -1.0 };
+						tokens.insert(tokens.begin() + i + 1, token{ SEval::_internal_type::OPERATOR, 2, 0 });
+						i--;
+						continue;
+					}
+					// if current token is +
+					if (tokens[i].indexValue == 0)
+					{
+						tokens.erase(tokens.begin() + i);
+						i--;
+						continue;
+					}
+				}
+			}
+
+			// if current token is right bracket
+			if (tokens[i].type == SEval::_internal_type::BRACKET && tokens[i].indexValue == 1)
+			{
+				// if next token is left bracket
+				if (i + 1 < tokens.size() && tokens[i + 1].type == SEval::_internal_type::BRACKET && tokens[i + 1].indexValue == 0)
+				{
+					tokens.insert(tokens.begin() + i + 1, token{ SEval::_internal_type::OPERATOR, 2, 0 });
+					i--;
+					continue;
+				}
+			}
+
+			// if current token is operator and previous token is left bracket or index == 0
+			if (tokens[i].type == SEval::_internal_type::OPERATOR && 
+				(i == 0 || (i - 1 >= 0 && tokens[i - 1].type == SEval::_internal_type::BRACKET && tokens[i - 1].indexValue == 0)))
+			{
+				// if current token is -
+				if (tokens[i].indexValue == 1)
+				{
+					tokens[i] = token{ SEval::_internal_type::NUMBER, 0, -1.0 };
+					tokens.insert(tokens.begin() + i + 1, token{ SEval::_internal_type::OPERATOR, 2, 0 });
+					i--;
+					continue;
+				}
+				// if current token is +
+				if (tokens[i].indexValue == 0)
+				{
+					tokens.erase(tokens.begin() + i);
+					i--;
+					continue;
+				}
+			}
+		}
+
 		// shunting yard algorithm
 		std::vector<token> output;
 		std::stack<token> operatorStack;
@@ -295,7 +355,7 @@ namespace SEval
 				}
 
 				// if operator stack top is function
-				if (operatorStack.top().type == SEval::_internal_type::FUNCTION)
+				if (!operatorStack.empty() && operatorStack.top().type == SEval::_internal_type::FUNCTION)
 				{
 					output.push_back(operatorStack.top());
 					operatorStack.pop();
