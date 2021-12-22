@@ -49,18 +49,18 @@ namespace SEval
 	};
 	const _internal_function functionList[] =
 	{
-		{"sin" , func_sin },
-		{"asin", func_asin},
-		{"cos" , func_cos },
-		{"acos", func_acos},
-		{"tan" , func_tan },
-		{"atan", func_atan},
-		{"ctg" , func_ctg },
-		{"actg", func_actg},
-		{"abs" , func_abs},
-		{"dtr" , func_degToRad},
-		{"rtd" , func_radToDeg},
-		{"floor" , func_floor},
+		{"sin"  , func_sin },
+		{"asin" , func_asin},
+		{"cos"  , func_cos },
+		{"acos" , func_acos},
+		{"tan"  , func_tan },
+		{"atan" , func_atan},
+		{"ctg"  , func_ctg },
+		{"actg" , func_actg},
+		{"abs"  , func_abs},
+		{"dtr"  , func_degToRad},
+		{"rtd"  , func_radToDeg},
+		{"floor", func_floor},
 		{"ceil" , func_ceil}
 	};
 	const _internal_function constantList[] =
