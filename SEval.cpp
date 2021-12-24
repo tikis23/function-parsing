@@ -224,11 +224,12 @@ namespace SEval
 		// correction in tokens
 		for (int i = 0; i < tokens.size(); i++)
 		{
-			// if current token is operand
-			if (tokens[i].type == SEval::_internal_type::OPERAND && i + 1 < tokens.size())
+			// if current token is operand or constant
+			if ((tokens[i].type == SEval::_internal_type::OPERAND || tokens[i].type == SEval::_internal_type::CONSTANT) && i + 1 < tokens.size())
 			{
-				// if next token is operand or left bracket
-				if (tokens[i + 1].type == SEval::_internal_type::OPERAND || (tokens[i + 1].type == SEval::_internal_type::BRACKET && tokens[i + 1].indexValue == 0))
+				// if next token is operand or constant or left bracket
+				if (tokens[i + 1].type == SEval::_internal_type::OPERAND || tokens[i + 1].type == SEval::_internal_type::CONSTANT
+					|| (tokens[i + 1].type == SEval::_internal_type::BRACKET && tokens[i + 1].indexValue == 0))
 				{
 					tokens.insert(tokens.begin() + i + 1, token{ SEval::_internal_type::OPERATOR, 2, 0 });
 					i--;
