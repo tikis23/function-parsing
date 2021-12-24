@@ -393,7 +393,19 @@ namespace SEval
 		for (int i = 0; i < tokens.size(); i++)
 		{
 			if (tokens[i].type == SEval::_internal_type::OPERAND)
-				output.push_back({(char)tokens[i].indexValue, 0});
+			{
+				bool exists = false;
+				for (int j = 0; j < output.size(); j++)
+				{
+					if (output[j].symbol == tokens[i].indexValue)
+					{
+						exists = true;
+						break;
+					}
+				}
+				if(!exists)
+					output.push_back({(char)tokens[i].indexValue, 0});
+			}
 		}
 		return output;
 	}
