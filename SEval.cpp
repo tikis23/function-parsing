@@ -76,7 +76,7 @@ namespace SEval
 		{"/", func_div , 2, 0},
 		{"%", func_mod , 2, 0},
 		{"$", func_root, 3, 1},
-		{"^", func_pow , 3, 1},
+		{"^", func_pow , 3, 0},
 		{"l", func_log , 3, 1}
 	};
 
@@ -224,8 +224,10 @@ namespace SEval
 		// correction in tokens
 		for (int i = 0; i < tokens.size(); i++)
 		{
-			// if current token is operand or constant
-			if ((tokens[i].type == SEval::_internal_type::OPERAND || tokens[i].type == SEval::_internal_type::CONSTANT) && i + 1 < tokens.size())
+			// if current token is operand or constant or number
+			if ((tokens[i].type == SEval::_internal_type::OPERAND || tokens[i].type == SEval::_internal_type::CONSTANT 
+				|| tokens[i].type == SEval::_internal_type::NUMBER || (tokens[i].type == SEval::_internal_type::BRACKET && tokens[i].indexValue == 1))
+				&& i + 1 < tokens.size())
 			{
 				// if next token is operand or constant or left bracket
 				if (tokens[i + 1].type == SEval::_internal_type::OPERAND || tokens[i + 1].type == SEval::_internal_type::CONSTANT
@@ -258,18 +260,6 @@ namespace SEval
 						i--;
 						continue;
 					}
-				}
-			}
-
-			// if current token is right bracket
-			if (tokens[i].type == SEval::_internal_type::BRACKET && tokens[i].indexValue == 1)
-			{
-				// if next token is left bracket
-				if (i + 1 < tokens.size() && tokens[i + 1].type == SEval::_internal_type::BRACKET && tokens[i + 1].indexValue == 0)
-				{
-					tokens.insert(tokens.begin() + i + 1, token{ SEval::_internal_type::OPERATOR, 2, 0 });
-					i--;
-					continue;
 				}
 			}
 
